@@ -1,0 +1,16 @@
+---
+ansible-navigator:
+  execution-environment:
+#    image: registry.redhat.io/ansible-automation-platform-22/ee-supported-rhel8:latest
+    image: registry.redhat.io/ansible-automation-platform-24/ee-supported-rhel9:latest
+#    image: registry.redhat.io/ansible-automation-platform-24/ee-minimal-rhel9:latest
+#    container-options:
+#      - "--add-host=node2:10.0.2.2"
+    pull:
+      arguments:
+        - "--tls-verify=false"
+      policy: missing
+#      policy: never
+  playbook-artifact:
+    enable: false
+#  mode: stdout
