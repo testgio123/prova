@@ -1,0 +1,120 @@
+---
+- name: test http
+  hosts: casa
+  become: false
+#  gather_facts: false
+  gather_subset:
+    - '!all'
+    - '!any'
+    - facter
+  vars:
+    Debian:
+      - firewalld
+      - apache2
+    RedHat:
+      - firewalld
+      - httpd
+    port_http: 80/tcp
+
+  pre_tasks:
+    - name: Generate dynamic groups
+      ansible.builtin.group_by:
+        key: "{{ ansible_facts['os_family']  }}"
+
+    - name: show family
+      ansible.builtin.debug: 
+        msg: "{{ ansible_facts['os_family']  }}"
+
+- name: per RH1
+  hosts: RedHat
+  gather_facts: false
+  tasks:
+    - name: set svcs for RedHat 
+      become: true
+      ansible.builtin.package: 
+        state: latest
+        name: "{{ item }}"
+      loop: "{{ RedHat }}"
+      
+- name: per Debian1
+  gather_facts: false
+  hosts: Debian
+  tasks:
+    - name: set svcs for Debian 
+      ansible.builtin.package: 
+        state: latest
+        name: "{{ item }}"
+      loop: "{{ Debian }}"
+
+
+- name: per tutti1
+  hosts: Debian,RedHat
+  gather_facts: false
+  tasks:
+    - name: create index
+      become: true
+      copy:
+        content: |
+          Questo è l{{ "'" }}host {{ inventory_hostname }}
+        dest: /var/www/html/index.html
+
+- name: per RH2
+  hosts: RedHat
+  gather_facts: false
+  tasks:
+    - name: start svcs for RedHat
+      ansible.builtin.service: 
+        state: started
+        name: "{{ item }}"
+        enabled: yes
+      loop: "{{ RedHat }}"
+      tags: new_index
+      
+- name: per Debian2
+  hosts: Debian
+  gather_facts: false
+  tasks:
+    - name: start svcs for Debian 
+      block:
+        - name: start svcs for Debian   
+          ansible.builtin.service: 
+            state: started
+            name: "{{ item }}"
+            enabled: yes
+          loop: "{{ Debian }}"
+        - name: replace for firewalld in Debian   
+          ansible.builtin.replace:
+            path: /etc/firewalld/firewalld.conf
+            regexp: '^FirewallBackend=nftables'
+            replace: 'FirewallBackend=iptables'
+      become: true
+  
+- name: per tutti2
+  gather_facts: false
+  hosts: Debian,RedHat
+  tasks:
+    - name: check firewall port opened
+      become: true
+      ansible.posix.firewalld: 
+        state: enabled
+        port: "{{ port_http }}"
+        permanent: true
+        immediate: true
+
+
+    - name: verify httpd access
+      block:
+        - name: make httpd access
+          uri:
+            url: "http://localhost"
+            return_content: yes
+          register: result
+
+        - name: show result
+          debug:
+            msg: "{{ result.content }}"
+      tags: 
+        - curl
+
+
+

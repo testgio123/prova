@@ -17,3 +17,10 @@ rhel9   ansible_address=10.0.4.3 ansible_user=ansible ansible_password=ansible
 
 [dev]
 10.0.4.3
+
+[Debian]
+10.0.2.2
+
+[RedHat]
+10.0.4.2
+10.0.4.3

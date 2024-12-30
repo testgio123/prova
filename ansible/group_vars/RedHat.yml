@@ -1,0 +1,6 @@
+---
+RedHat:
+  - firewalld
+  - httpd
+port_http: 80/tcp
+
